@@ -1,10 +1,11 @@
 package com.salesianostriana.dam.__02.TAREA.security;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -17,35 +18,43 @@ import java.util.List;
 @Component
 public class JwtFilter extends OncePerRequestFilter {
 
-    private final JwtUtil jwtUtil;
-
-    public JwtFilter(JwtUtil jwtUtil){
-        this.jwtUtil = jwtUtil;
-    }
+    private final String SECRET = "miClaveSuperSecreta";
 
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
-            FilterChain filterChain) throws ServletException, IOException {
-        String header = request.getHeader("Authorization");
-        if (header != null && header.startsWith("Bearer")){
-            String token = header.substring(7);
-            String usename = jwtUtil.getUsername(token);
+            FilterChain filterChain
+    ) throws ServletException, IOException {
 
-            var auth = new UsernamePasswordAuthenticationToken(
-                    usename,
-                    null,
-                    List.of()
-            );
+        String authHeader = request.getHeader("Authorization");
 
-            auth.setDetails(
-                    new WebAuthenticationDetailsSource().buildDetails(request)
-            );
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
 
-            SecurityContextHolder.getContext().setAuthentication(auth);
+            try {
+                Claims claims = Jwts.parser()
+                        .setSigningKey(SECRET)
+                        .parseClaimsJws(token)
+                        .getBody();
+
+                String username = claims.getSubject();
+
+                UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                        username,
+                        null,
+                        List.of()
+                );
+
+                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                SecurityContextHolder.getContext().setAuthentication(auth);
+
+            } catch (Exception e) {
+                SecurityContextHolder.clearContext();
+            }
         }
 
-        filterChain.doFilter(request,response);
+        filterChain.doFilter(request, response);
     }
 }

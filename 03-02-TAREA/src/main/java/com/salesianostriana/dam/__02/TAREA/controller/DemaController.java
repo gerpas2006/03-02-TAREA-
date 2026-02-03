@@ -1,6 +1,6 @@
 package com.salesianostriana.dam.__02.TAREA.controller;
 
-import org.apache.tomcat.util.net.openssl.ciphers.Authentication;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -12,8 +12,8 @@ public class DemaController {
         return "Endpoint público";
     }
 
-    @GetMapping("secure")
+    @GetMapping("/secure")
     public String protegido(Authentication auth){
-        return "hola" + auth.getDeclaringClass().getName() + "endpoint protegido";
+        return "hola" + auth.getName() + "endpoint protegido";
     }
 }
